@@ -1,0 +1,10 @@
+---
+Name: approutes
+After:
+  - "#rootroutes"
+  - "#coreroutes"
+---
+SilverStripe\Control\Director:
+  rules:
+    "api/v1/city//$Action/$ID": CityController
+    "api/v1/country//$Action/$ID": CountryController
