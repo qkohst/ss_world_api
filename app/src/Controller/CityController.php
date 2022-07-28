@@ -154,8 +154,20 @@ class CityController extends PageController
         $order = "ASC";
         $where = "";
         $keyword = "";
+        $pages = 1;
+        $limit = 10;
 
         $datas = $request->requestVars();
+
+        // Validate Pagination 
+        if (isset($datas['pages'])) {
+            $pages = $datas['pages'];
+        }
+        if (isset($datas['limit'])) {
+            $limit = $datas['limit'];
+        }
+        $offset = ($pages - 1) * $limit;
+
         if (isset($datas['search'])) {
             $key = $datas['search'];
             $keyword = Convert::raw2sql($key);
@@ -176,11 +188,16 @@ class CityController extends PageController
         }
 
         $sql = "SELECT City.*
-        FROM City
-        $where
-        ORDER BY $sortBy $order";
+        FROM City";
 
         $dataCity = DB::query($sql);
+        $total_records = $dataCity->numRecords();
+
+        $searchOrder = "$where ORDER BY $sortBy $order";
+        $dataCity = DB::query($sql . $searchOrder);
+        $count_results = $dataCity->numRecords();
+
+        $dataCity = DB::query($sql . $searchOrder . " LIMIT $limit OFFSET $offset");
 
         if ($dataCity->numRecords() > 0) {
             $temp_results = [];
@@ -208,7 +225,13 @@ class CityController extends PageController
                         $message
                     ]
                 ],
-                "data" => $temp_results
+                "data" => [
+                    "pages" => $pages,
+                    "limit" => $limit,
+                    "total_records" => $total_records,
+                    "count_results" => $count_results,
+                    "results" => $temp_results
+                ]
             ];
         } else {
             $response = [
@@ -216,7 +239,7 @@ class CityController extends PageController
                     "code" => 404,
                     "description" => "Not Found",
                     "message" => [
-                        'Data dengan keyword ' . $keyword . ' tidak ditemukan.'
+                        'Data dengan keyword ' . $key . ' tidak ditemukan.'
                     ]
                 ]
             ];
@@ -344,8 +367,18 @@ class CityController extends PageController
         $order = "ASC";
         $andWhere = "";
         $keyword = "";
+        $pages = 1;
+        $limit = 10;
 
-        $datas = $request->requestVars();
+        // Validate Pagination 
+        if (isset($datas['pages'])) {
+            $pages = $datas['pages'];
+        }
+        if (isset($datas['limit'])) {
+            $limit = $datas['limit'];
+        }
+        $offset = ($pages - 1) * $limit;
+
         if (isset($datas['search'])) {
             $key = $datas['search'];
             $keyword = Convert::raw2sql($key);
@@ -366,10 +399,16 @@ class CityController extends PageController
 
         $sql = "SELECT City.*
         FROM City
-        WHERE CountryCode = '" . $CountryCode . "' $andWhere
-        ORDER BY $sortBy $order";
+        WHERE CountryCode = '$CountryCode'";
 
         $dataCity = DB::query($sql);
+        $total_records = $dataCity->numRecords();
+
+        $searchOrder = "$andWhere ORDER BY $sortBy $order";
+        $dataCity = DB::query($sql . $searchOrder);
+        $count_results = $dataCity->numRecords();
+
+        $dataCity = DB::query($sql . $searchOrder . " LIMIT $limit OFFSET $offset");
 
         if ($dataCity->numRecords() > 0) {
             $temp_results = [];
@@ -397,7 +436,13 @@ class CityController extends PageController
                         $message
                     ]
                 ],
-                "data" => $temp_results
+                "data" => [
+                    "pages" => $pages,
+                    "limit" => $limit,
+                    "total_records" => $total_records,
+                    "count_results" => $count_results,
+                    "results" => $temp_results
+                ]
             ];
         } else {
             $response = [

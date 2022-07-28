@@ -17,8 +17,20 @@ class CountryController extends PageController
         $order = "ASC";
         $where = "";
         $keyword = "";
+        $pages = 1;
+        $limit = 10;
 
         $datas = $request->requestVars();
+
+        // Validate Pagination 
+        if (isset($datas['pages'])) {
+            $pages = $datas['pages'];
+        }
+        if (isset($datas['limit'])) {
+            $limit = $datas['limit'];
+        }
+        $offset = ($pages - 1) * $limit;
+
         if (isset($datas['search'])) {
             $key = $datas['search'];
             $keyword = Convert::raw2sql($key);
@@ -50,10 +62,16 @@ class CountryController extends PageController
         }
 
         $sql = "SELECT Country.*
-        FROM Country
-        $where
-        ORDER BY $sortBy $order";
+        FROM Country";
+
         $dataCountry = DB::query($sql);
+        $total_records = $dataCountry->numRecords();
+
+        $searchOrder = "$where ORDER BY $sortBy $order";
+        $dataCountry = DB::query($sql . $searchOrder);
+        $count_results = $dataCountry->numRecords();
+
+        $dataCountry = DB::query($sql . $searchOrder . " LIMIT $limit OFFSET $offset");
 
         if ($dataCountry->numRecords() > 0) {
             $temp_results = [];
@@ -92,7 +110,13 @@ class CountryController extends PageController
                         $message
                     ]
                 ],
-                "data" => $temp_results
+                "data" => [
+                    "pages" => $pages,
+                    "limit" => $limit,
+                    "total_records" => $total_records,
+                    "count_results" => $count_results,
+                    "results" => $temp_results
+                ]
             ];
         } else {
             $response = [
@@ -100,7 +124,7 @@ class CountryController extends PageController
                     "code" => 404,
                     "description" => "Not Found",
                     "message" => [
-                        'Data dengan keyword ' . $keyword . ' tidak ditemukan.'
+                        'Data dengan keyword ' . $key . ' tidak ditemukan.'
                     ]
                 ]
             ];
