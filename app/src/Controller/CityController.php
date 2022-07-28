@@ -9,6 +9,7 @@ class CityController extends PageController
 {
     private static $allowed_actions = [
         'byCountryCode',
+        'suggest',
     ];
 
     public function index(HTTPRequest $request)
@@ -405,6 +406,76 @@ class CityController extends PageController
                     "description" => "Not Found",
                     "message" => [
                         'Data City By CountryCode ' . $CountryCode . ' dengan keyword ' . $key . ' tidak ditemukan.'
+                    ]
+                ]
+            ];
+        }
+
+        $this->response->addHeader('Content-Type', 'application/json');
+        return json_encode($response);
+    }
+
+    public function suggest(HTTPRequest $request)
+    {
+        $datas = $request->requestVars();
+        if (isset($datas['keyword']) && str_replace('%', '', trim($datas['keyword'])) != null) {
+            $query = $datas['keyword'];
+            $query = Convert::raw2sql($query);
+
+            $sql = "SELECT suggest FROM 
+            (SELECT Name AS suggest
+            FROM City 
+            WHERE Name LIKE '%" . strtoupper($query) . "%'
+            UNION ALL
+            SELECT CountryCode AS suggest
+            FROM City 
+            WHERE CountryCode LIKE '%" . strtoupper($query) . "%'
+            UNION ALL
+            SELECT District AS suggest
+            FROM City 
+            WHERE District LIKE '%" . strtoupper($query) . "%'
+            UNION ALL
+            SELECT Population AS suggest
+            FROM City 
+            WHERE Population LIKE '%" . strtoupper($query) . "%')
+            tablenya GROUP BY suggest";
+
+            $dataCity = DB::query($sql);
+
+            if ($dataCity->numRecords() > 0) {
+                $suggest_results = [];
+                foreach ($dataCity as $city) {
+                    array_push($suggest_results, $city['suggest']);
+                }
+
+                $response = [
+                    "status" => [
+                        "code" => 200,
+                        "description" => "OK",
+                        "message" => [
+                            'Suggestion untuk ' . $query
+                        ]
+                    ],
+                    "data" => $suggest_results
+                ];
+            } else {
+                $response = [
+                    "status" => [
+                        "code" => 404,
+                        "description" => "Not Found",
+                        "message" => [
+                            'Suggestion tidak ditemukan'
+                        ]
+                    ]
+                ];
+            }
+        } else {
+            $response = [
+                "status" => [
+                    "code" => 422,
+                    "description" => "Unprocessable Entity",
+                    "message" => [
+                        'Masukkan keyword yang valid'
                     ]
                 ]
             ];
